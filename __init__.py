@@ -24,8 +24,8 @@ def add_telegram(nodo):
 
                 # Slider
                 slider_knob = nuke.Double_Knob("proxy_scale_factor", "Proxy scale factor")
-                slider_knob.setRange(0.2, 0.8) 
-                slider_knob.setValue(0.5)
+                slider_knob.setRange(0.25, 0.75)
+                slider_knob.setDefaultValue([0.5])
                 nodo.addKnob(slider_knob)
 
                 # Boton
@@ -86,19 +86,22 @@ def iniciar():
     render_path_proxy = re.sub(pattern, '', render_path_proxy)
     print(render_path, render_path_proxy)
 
-    class_thread_notify = thread_notify(render_path, render_path_proxy, colorspace)
+    resize = write_node["proxy_scale_factor"].value()
+
+    class_thread_notify = thread_notify(render_path, render_path_proxy, colorspace, resize)
     class_thread_notify.starting()
 
 class thread_notify():
 
-    def __init__(self, render_path, render_path_proxy, colorspace):
+    def __init__(self, render_path, render_path_proxy, colorspace, resize):
         self.render_path = render_path
         self.render_path_proxy = render_path_proxy
         self.colorspace = colorspace
+        self.resize = resize
         
 
     def after_render(self):
-        class_render_proxy = render_proxy(self.render_path, self.render_path_proxy, self.colorspace)
+        class_render_proxy = render_proxy(self.render_path, self.render_path_proxy, self.colorspace, self.resize)
         class_render_proxy.render_mp4()
         class_notify = notify()
         class_notify.send_text()
@@ -106,7 +109,7 @@ class thread_notify():
 
     def wait_and_execute(self):
 
-        time.sleep(2)
+        time.sleep(1)
         nuke.executeInMainThread(self.after_render)
 
     def starting(self):

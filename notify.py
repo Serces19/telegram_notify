@@ -10,7 +10,6 @@ chat_id = os.getenv('chat_id')
 class notify():
 
     def __init__(self):
-        print('Iniciando notify')
         self.shot = nuke.tcl('file rootname [file tail [value root.name]]')
         self.shot = str(self.shot)
 
@@ -26,14 +25,11 @@ class notify():
         
 
     def send_video(self, render_path_proxy, caption):
-        print('iniciando send video')
 
         url = f'https://api.telegram.org/bot{bot_token}/sendVideo'
 
         caption = self.shot + " " + caption
         data = {'chat_id': chat_id, 'caption': caption}
-        print(data, render_path_proxy)
-
         with open(render_path_proxy, 'rb') as video:
             files = {'video': video}
             response = requests.post(url, data=data, files=files)
