@@ -58,4 +58,4 @@ class render_proxy():
             nuke.root()['proxy'].setValue(False)
             nuke.execute(write_node, continueOnError=True)
 
-        # nuke.delete(group)
+        nuke.delete(group)
