@@ -1,77 +1,120 @@
 import nuke
-from telegram_notify.notify import notify
-
-code = '''
-
-import nuke
+import threading
+import time
 import re
-import os
 from telegram_notify.notify import notify
 from telegram_notify.render_proxy import render_proxy
 
-write_node = nuke.thisNode()
-render_path = nuke.filename(write_node)
-nueva_extension = "proxy.mp4"
-render_path_proxy = re.sub(r"\.\w+$", "." + nueva_extension, render_path)
 
-render_proxy()
-class_notify = notify()
-class_notify.send_video(render_path_proxy, "Proxy render .mp4")
+#########################################################################################################
+#Functions
 
-'''
-
-def add_old_telegram():
-
-    for nodo in nuke.allNodes():
+def add_telegram(nodo):
         if nodo.Class() == 'Write':
             if 'telegram_notify' not in nodo.knobs():
 
-                # Crear un nuevo tab personalizado 'Telegram'
+                # Tab 'Telegram'
                 telegram_tab = nuke.Tab_Knob('Telegram', 'Telegram')
-
-                #Agregar el tab personalizado al nodo Write
                 nodo.addKnob(telegram_tab) 
 
-                #Agregar el checkbox knob al nodo 
+                # Checkbox 
                 telegram_notify_knob = nuke.Boolean_Knob('telegram_notify', 'Telegram Notify')
                 telegram_notify_knob.setValue(False)
                 nodo.addKnob(telegram_notify_knob)
 
-                # Creamos el botón personalizado (Knob Python Script Button) y lo asignamos al nodo de escritura
-                custom_button = nuke.PyScript_Knob("render_proxy", "Render proxy and send", code)
-                custom_button.setFlag(nuke.STARTLINE)
+                # Slider
+                slider_knob = nuke.Double_Knob("proxy_scale_factor", "Proxy scale factor")
+                slider_knob.setRange(0.2, 0.8) 
+                slider_knob.setValue(0.5)
+                nodo.addKnob(slider_knob)
 
-                # Agregamos el botón al nodo de escritura
-                nodo.addKnob(custom_button)
+                # Boton
+                code = '''
+
+write_node = nuke.thisNode()
+render_path = nuke.filename(write_node)
+render_path = str(render_path)
+render_path = os.path.dirname(render_path)
+render_path = os.path.normpath(render_path) 
+
+if os.path.exists(render_path):
+    if os.path.isdir(render_path):
+        if sys.platform.startswith("darwin"):  # macOS
+            os.system("open '{}'".format(render_path))
+        elif sys.platform.startswith("win32"):  # Windows
+            os.startfile(render_path)
+        elif sys.platform.startswith("linux"):  # Linux
+            os.system("xdg-open '{}'".format(render_path))
+    else:
+        nuke.message("The path is not a folder.")
+else:
+    nuke.message("The folder does not exist.")
+
+'''
+
+                button_knob = nuke.PyScript_Knob("open_folder", "Open in folder", code)
+                button_knob.setFlag(nuke.STARTLINE)
+                nodo.addKnob(button_knob)
+
+
+def add_old_telegram():
+    for nodo in nuke.allNodes():
+        add_telegram(nodo)
+
 
 def add_new_telegram(): 
     nodo = nuke.thisNode()
-    if nodo.Class() == 'Write':
-        if 'telegram_notify' not in nodo.knobs():
-            
-            # Crear un nuevo tab personalizado 'Telegram'
-            telegram_tab = nuke.Tab_Knob('Telegram', 'Telegram')
-
-            #Agregar el tab personalizado al nodo Write
-            nodo.addKnob(telegram_tab) 
-
-            telegram_notify_knob = nuke.Boolean_Knob('telegram_notify', 'Telegram Notify')
-            telegram_notify_knob.setValue(False)
-            nodo.addKnob(telegram_notify_knob)
+    add_telegram(nodo)
 
 
-            # Creamos el botón personalizado (Knob Python Script Button) y lo asignamos al nodo de escritura
-            custom_button = nuke.PyScript_Knob("render_proxy", "Render proxy and send", code)
-            custom_button.setFlag(nuke.STARTLINE)
+def iniciar():
+    write_node = nuke.thisNode()
 
-            # Agregamos el botón al nodo de escritura
-            nodo.addKnob(custom_button)
+    if write_node['telegram_notify'].value() is False:
+        return
+
+    colorspace = write_node["colorspace"].value()
+    render_path = nuke.filename(write_node)
+    nueva_extension = "proxy.mp4"
+
+    ####
+    render_path_proxy = re.sub(r"\.\w+$", "." + nueva_extension, render_path)
+    render_path_proxy = render_path_proxy.replace('#', '')
+
+    #%03d, %05d, etc.
+    pattern = r'%\d+d'
+    render_path_proxy = re.sub(pattern, '', render_path_proxy)
+    print(render_path, render_path_proxy)
+
+    class_thread_notify = thread_notify(render_path, render_path_proxy, colorspace)
+    class_thread_notify.starting()
+
+class thread_notify():
+
+    def __init__(self, render_path, render_path_proxy, colorspace):
+        self.render_path = render_path
+        self.render_path_proxy = render_path_proxy
+        self.colorspace = colorspace
+        
+
+    def after_render(self):
+        class_render_proxy = render_proxy(self.render_path, self.render_path_proxy, self.colorspace)
+        class_render_proxy.render_mp4()
+        class_notify = notify()
+        class_notify.send_text()
+        class_notify.send_video(self.render_path_proxy, "Proxy render mp4")
+
+    def wait_and_execute(self):
+
+        time.sleep(2)
+        nuke.executeInMainThread(self.after_render)
+
+    def starting(self):
+        threading.Thread(target=self.wait_and_execute).start()
+        print('starting')
 
 
 add_old_telegram()
 nuke.addOnCreate(add_new_telegram)
 
-class_notify = notify()
-nuke.addAfterRender(class_notify.send_text)
-
-
+nuke.addAfterRender(iniciar)

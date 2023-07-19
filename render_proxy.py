@@ -1,52 +1,59 @@
 import nuke
-import re
-import os
 
-write_node = nuke.thisNode()
-render_path = nuke.filename(write_node)
-nueva_extension = "proxy.mp4"
-render_path_proxy = re.sub(r"\.\w+$", "." + nueva_extension, render_path)
+class render_proxy():
 
-def render_proxy():
-    write_node = nuke.thisNode()
-    if write_node['telegram_notify'].value() is False:
-        return
+    def __init__(self, render_path, render_path_proxy, colorspace):
+        self.render_path = render_path
+        self.render_path_proxy = render_path_proxy
+        self.colorspace = str(colorspace)
+        print(render_path, render_path_proxy)
+    
+    def render_mp4(self):
+        nuke.root()['lock_range'].setValue(True)
 
-    if not os.path.exists(render_path):
-        return
+        with nuke.nodes.Group() as group:
+            # Read
+            read_node = nuke.createNode("Read")
+            read_node["file"].fromUserText(self.render_path)
+            first_frame = nuke.root().firstFrame()
+            first_frame = str(first_frame)
+            last_frame = nuke.root().lastFrame()
+            last_frame = str(last_frame)
+            read_node['frame_mode'].setValue('start at')
+            read_node['frame'].setValue(first_frame)
+            print(first_frame, last_frame)
 
-    with nuke.nodes.Group() as group:
-        
-        # Crear un nodo Read para cargar el archivo de entrada
-        read_node = nuke.createNode("Read")
-        read_node["file"].fromUserText(render_path)
-        read_node['frame_mode'].setValue('start at')
-        first_frame = nuke.root().firstFrame()
-        first_frame = str(first_frame)
-        last_frame = nuke.root().lastFrame()
-        last_frame = str(last_frame)
-        read_node['frame'].setValue(first_frame)
+            file_extension = self.render_path.split('.')[-1].lower()
 
-
-        # Crear un nodo Reformat para reducir la escala a 1/4
-        reformat_node = nuke.createNode("Reformat")
-        reformat_node["type"].setValue("scale")
-        reformat_node["scale"].setValue(0.25)
-
-        # Conectar el nodo Read al nodo Reformat
-        reformat_node.setInput(0, read_node)
-
-        # Crear un nodo Write para escribir el archivo de salida
-        write_node = nuke.createNode("Write")
-        write_node["file"].fromUserText(render_path_proxy)
-        write_node["colorspace"].setValue("sRGB")
-        write_node["file_type"].setValue("mov")  # Establecer el tipo de archivo a MOV
-        write_node["mov64_codec"].setValue("h264")  # Establecer el códec a H.264
-        write_node["mov64_quality"].setValue("Least")  # Establecer la calidad a baja
+            if file_extension not in ['mov', 'mp4', 'mxf']:
+                read_node["first"].setValue(int(first_frame))
+                read_node["last"].setValue(int(last_frame))
 
 
-        # Conectar el nodo Reformat al nodo Write
-        write_node.setInput(0, reformat_node)
-        nuke.execute(write_node)
+            # Reformat
+            reformat_node = nuke.createNode("Reformat")
+            reformat_node["type"].setValue("scale")
+            reformat_node["scale"].setValue(0.5)
+            reformat_node.setInput(0, read_node)
 
-    nuke.delete(group)
+            # Write
+            write_node = nuke.createNode("Write")
+            write_node["file"].fromUserText(self.render_path_proxy)
+            write_node["file_type"].setValue("mov")  # Establecer el tipo de archivo a MOV
+            write_node["mov64_codec"].setValue("h264")  # Establecer el códec a H.264
+            write_node["mov64_quality"].setValue("Low")  # Establecer la calidad a baja
+            write_node["proxy"].fromUserText(self.render_path_proxy)
+            knob = write_node['colorspace']
+
+            for i in range(knob.numValues()):
+                option_name = knob.enumName(i)
+                if "sRGB" in option_name:
+                    knob.setValue(i)
+                    break
+
+            write_node.setInput(0, reformat_node)
+            read_node["reload"].execute()
+            nuke.root()['proxy'].setValue(False)
+            nuke.execute(write_node, continueOnError=True)
+
+        nuke.delete(group)
