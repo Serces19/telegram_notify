@@ -1,10 +1,12 @@
-#Nuke Telegram Render Plugin
+## Nuke Telegram Render Plugin
 
 This is a simple plugin for Nuke that allows you to automatically send notifications to a Telegram chat whenever a render finishes, along with a preview proxy of the render.
 
-Installation:
+### Installation:
 
 1. Look for Nuke_render_bot on Telegram and start a conversation with it. It will send you a message with your chat_id. If you try to initiate a conversation with the bot, it will only provide a generic message and the chat ID, haha!
+
+![Texto alternativo](https://imgur.com/h3oSKQc)
 
 2. Download the 'telegram_notify' folder from this repository.
 
@@ -18,7 +20,7 @@ os.environ['chat_id'] = 'your chat id'
 ```
 Make sure to replace 'your chat id' with the key provided by the Nuke_render_bot.
 
-Usage:
+### Usage:
 
 Once the plugin is installed, follow these steps to use it:
 
@@ -33,7 +35,7 @@ Once the plugin is installed, follow these steps to use it:
 
 4. Configure the knobs according to your needs and perform the rendering.
 
-Notes on Possible Errors:
+### Notes on Possible Errors:
 
 If you encounter possible errors during rendering, they may be related to a very high or low resolution of the render. In this case, try adjusting the scaling factor.
 
