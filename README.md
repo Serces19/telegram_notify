@@ -34,7 +34,7 @@ Once the plugin is installed, follow these steps to use it:
    - Scaling Factor: A control to define the scale factor of the proxy render. Use values 0.25, 0.5, and 0.75 for better results. Outside these values, scaling artifacts may appear.
    - Open in folder: A button to open the current directory where the renders are saved or will be saved (this can be very useful beyond notifications).
 
-4. Configure the knobs according to your needs and perform the rendering.
+Configure the knobs according to your needs and perform the rendering.
 
 ### Notes on Possible Errors:
 
