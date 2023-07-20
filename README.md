@@ -4,9 +4,9 @@ This is a simple plugin for Nuke that allows you to automatically send notificat
 
 ### Installation:
 
-1. Look for Nuke_render_bot on Telegram and start a conversation with it. It will send you a message with your chat_id. If you try to initiate a conversation with the bot, it will only provide a generic message and the chat ID, haha!
+1. Look for Nuke_render_bot on Telegram and start a conversation with it. It will send you a message with your chat_id. Notifications will arrive through this chat, multiple users can point their notifications to the same chat. If you try to initiate a conversation with the bot, it will only provide a generic message and the chat ID, haha!
 
-![Texto alternativo](https://imgur.com/h3oSKQc)
+![Texto alternativo](https://i.imgur.com/Sr1OfNf.png)
 
 2. Download the 'telegram_notify' folder from this repository.
 
@@ -17,6 +17,7 @@ This is a simple plugin for Nuke that allows you to automatically send notificat
 # Telegram notify
 import os
 os.environ['chat_id'] = 'your chat id'
+import telegram_notify
 ```
 Make sure to replace 'your chat id' with the key provided by the Nuke_render_bot.
 
